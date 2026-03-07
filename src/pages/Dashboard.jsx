@@ -2,20 +2,19 @@ import { useState } from "react"
 
 export default function Dashboard() {
 
+  const API = "https://ai-hiring-companion-backend-production.up.railway.app"
+
   const [jd, setJd] = useState("")
   const [parsedData, setParsedData] = useState(null)
   const [assessment, setAssessment] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const API = "https://ai-hiring-companion-backend-production.up.railway.app"
-
-
-  /* ---------------- PARSE JD ---------------- */
+  // ---------------- PARSE JD ----------------
 
   const parseJD = async () => {
 
     if (!jd) {
-      alert("Paste job description first")
+      alert("Paste a Job Description first")
       return
     }
 
@@ -33,16 +32,20 @@ export default function Dashboard() {
         })
       })
 
-      const data = await res.json()
+      const result = await res.json()
 
-      console.log("Parsed JD:", data)
+      console.log("Parse JD result:", result)
 
-      setParsedData(data)
+      if(result.ok){
+        setParsedData(result.data)
+      } else {
+        alert("Parsing failed")
+      }
 
     } catch (err) {
 
       console.error(err)
-      alert("JD parsing failed")
+      alert("Server error while parsing JD")
 
     }
 
@@ -51,7 +54,7 @@ export default function Dashboard() {
   }
 
 
-  /* ---------------- GENERATE ASSESSMENT ---------------- */
+  // ---------------- GENERATE ASSESSMENT ----------------
 
   const generateAssessment = async () => {
 
@@ -72,11 +75,11 @@ export default function Dashboard() {
         body: JSON.stringify(parsedData)
       })
 
-      const data = await res.json()
+      const result = await res.json()
 
-      console.log("Assessment:", data)
+      console.log("Assessment result:", result)
 
-      setAssessment(data)
+      setAssessment(result)
 
     } catch (err) {
 
@@ -94,21 +97,23 @@ export default function Dashboard() {
 
     <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
 
-      <h1>HireMinds AI Hiring Companion</h1>
+      <h1>HireMinds – AI Hiring Companion</h1>
 
       {/* JD INPUT */}
 
       <textarea
-        placeholder="Paste Job Description"
+        placeholder="Paste Job Description here"
         value={jd}
         onChange={(e) => setJd(e.target.value)}
         style={{
           width: "100%",
           height: "150px",
-          padding: "10px",
-          marginTop: "20px"
+          marginTop: "20px",
+          padding: "10px"
         }}
       />
+
+      {/* BUTTONS */}
 
       <div style={{ marginTop: "20px" }}>
 
@@ -118,7 +123,6 @@ export default function Dashboard() {
 
         <button
           onClick={generateAssessment}
-          disabled={!parsedData}
           style={{ marginLeft: "10px" }}
         >
           Generate Assessment
@@ -128,18 +132,22 @@ export default function Dashboard() {
 
       {loading && <p>Loading...</p>}
 
-      {/* PARSED JD */}
+      {/* PARSED DATA */}
 
       {parsedData && (
 
         <div style={{ marginTop: "30px" }}>
 
-          <h2>Parsed JD</h2>
+          <h2>Parsed Results</h2>
 
           <p><b>Role:</b> {parsedData.role}</p>
+
           <p><b>Seniority:</b> {parsedData.seniority}</p>
+
           <p><b>Domain:</b> {parsedData.domain}</p>
+
           <p><b>Experience:</b> {parsedData.experience}</p>
+
           <p><b>Skills:</b> {parsedData.skills?.join(", ")}</p>
 
         </div>
@@ -156,33 +164,38 @@ export default function Dashboard() {
 
           <p>Duration: {assessment.duration_minutes} minutes</p>
 
+          {/* MCQ */}
+
           <h3>MCQ Questions</h3>
 
-          {assessment.mcq?.map((q, i) => (
+          {assessment.mcq?.map((q, index) => (
 
-            <div key={i} style={{ marginBottom: "20px" }}>
+            <div key={index} style={{ marginBottom: "20px" }}>
 
-              <p><b>{i + 1}. {q.question}</b></p>
+              <p><b>{index + 1}. {q.question}</b></p>
 
-              {q.options.map((opt, idx) => (
-                <p key={idx}>{opt}</p>
+              {q.options.map((opt, i) => (
+                <p key={i}>{opt}</p>
               ))}
 
               <p style={{ color: "green" }}>
-                Answer: {q.correct_answer}
+                Correct Answer: {q.correct_answer}
               </p>
 
             </div>
 
           ))}
 
+          {/* CASE STUDIES */}
+
           <h3>Case Studies</h3>
 
-          {assessment.case_studies?.map((c, i) => (
+          {assessment.case_studies?.map((c, index) => (
 
-            <div key={i} style={{ marginBottom: "20px" }}>
+            <div key={index} style={{ marginBottom: "20px" }}>
 
               <p><b>Scenario:</b> {c.scenario}</p>
+
               <p><b>Question:</b> {c.question}</p>
 
               <p style={{ color: "green" }}>
