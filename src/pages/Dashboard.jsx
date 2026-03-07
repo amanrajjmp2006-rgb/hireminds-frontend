@@ -1,237 +1,204 @@
-import express from "express"
-import cors from "cors"
-import dotenv from "dotenv"
-import Groq from "groq-sdk"
+import { useState } from "react"
 
-dotenv.config()
+export default function Dashboard() {
 
-const app = express()
-const PORT = process.env.PORT || 8080
+  const [jd, setJd] = useState("")
+  const [parsedData, setParsedData] = useState(null)
+  const [assessment, setAssessment] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-app.use(cors())
-app.use(express.json())
+  const API = "https://ai-hiring-companion-backend-production.up.railway.app"
 
-console.log("AI Hiring Companion backend starting...")
 
-/* ---------------- GROQ SETUP ---------------- */
+  /* ---------------- PARSE JD ---------------- */
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY
+  const parseJD = async () => {
 
-if (!GROQ_API_KEY) {
-  console.error("ERROR: GROQ_API_KEY missing in environment variables")
-}
+    if (!jd) {
+      alert("Paste job description first")
+      return
+    }
 
-const groq = new Groq({
-  apiKey: GROQ_API_KEY
-})
+    try {
 
-/* ---------------- HEALTH CHECK ---------------- */
+      setLoading(true)
 
-app.get("/", (req, res) => {
-  res.send("Backend running")
-})
-
-/* ---------------- SAFE JSON EXTRACTOR ---------------- */
-
-function extractJSON(text) {
-  if (!text || typeof text !== "string") {
-    throw new Error("Empty model response")
-  }
-
-  try {
-    return JSON.parse(text)
-  } catch {}
-
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-  const candidate = fenced?.[1] || text
-
-  const start = candidate.indexOf("{")
-  const end = candidate.lastIndexOf("}")
-
-  if (start === -1 || end === -1) {
-    throw new Error("No JSON found in AI response")
-  }
-
-  const jsonString = candidate.slice(start, end + 1)
-
-  return JSON.parse(jsonString)
-}
-
-/* ---------------- PARSE JOB DESCRIPTION ---------------- */
-
-app.post("/parse-jd", async (req, res) => {
-  try {
-
-    console.log("Incoming /parse-jd body:", req.body)
-
-    // Accept MANY field names so frontend never breaks
-    const jd =
-      req.body.jd ||
-      req.body.jobDescription ||
-      req.body.description ||
-      req.body.text ||
-      req.body.job_description ||
-      req.body.jdText ||
-      req.body.prompt ||
-      req.body.content
-
-    if (!jd || typeof jd !== "string") {
-      return res.status(400).json({
-        error: "Job description missing"
+      const res = await fetch(`${API}/parse-jd`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          jd: jd
+        })
       })
+
+      const data = await res.json()
+
+      console.log("Parsed JD:", data)
+
+      setParsedData(data)
+
+    } catch (err) {
+
+      console.error(err)
+      alert("JD parsing failed")
+
     }
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      temperature: 0,
-      max_tokens: 500,
-      messages: [
-        {
-          role: "system",
-          content: "Extract structured info from job descriptions. Return JSON only."
-        },
-        {
-          role: "user",
-          content: `
-Extract these fields from the job description:
+    setLoading(false)
 
-role
-seniority
-domain
-skills
-experience
+  }
 
-Return JSON like:
 
-{
- "role":"",
- "seniority":"",
- "domain":"",
- "skills":[],
- "experience":""
-}
+  /* ---------------- GENERATE ASSESSMENT ---------------- */
 
-Job description:
-${jd}
-`
-        }
-      ]
-    })
+  const generateAssessment = async () => {
 
-    const raw = completion.choices?.[0]?.message?.content
-    const parsed = extractJSON(raw)
-
-    const result = {
-      role: parsed.role || "Not specified",
-      seniority: parsed.seniority || "Not specified",
-      domain: parsed.domain || "Not specified",
-      skills: Array.isArray(parsed.skills) ? parsed.skills : [],
-      experience: parsed.experience || "Not specified"
+    if (!parsedData) {
+      alert("Parse JD first")
+      return
     }
 
-    console.log("Parsed JD:", result)
+    try {
 
-    res.json(result)
+      setLoading(true)
 
-  } catch (err) {
-    console.error("Parse JD error:", err)
-
-    res.status(500).json({
-      error: "JD parsing failed"
-    })
-  }
-})
-
-/* ---------------- GENERATE ASSESSMENT ---------------- */
-
-app.post("/generate-assessment", async (req, res) => {
-  try {
-
-    const role = req.body.role || "General Role"
-    const domain = req.body.domain || "General"
-    const skills = req.body.skills || []
-    const seniority = req.body.seniority || "Mid"
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      temperature: 0.4,
-      max_tokens: 2000,
-      messages: [
-        {
-          role: "system",
-          content: "You generate hiring assessments. Return JSON only."
+      const res = await fetch(`${API}/generate-assessment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
         },
-        {
-          role: "user",
-          content: `
-Create a hiring assessment.
+        body: JSON.stringify(parsedData)
+      })
 
-Rules:
-- 10 MCQ questions (2 marks each)
-- 3 case study questions (5 marks each)
+      const data = await res.json()
 
-MCQ must contain:
-question
-options
-correct_answer
-marks
+      console.log("Assessment:", data)
 
-Case study must contain:
-scenario
-question
-ideal_answer
-marks
+      setAssessment(data)
 
-Return JSON exactly like:
+    } catch (err) {
 
-{
- "title":"",
- "duration_minutes":45,
- "mcq":[
-  {
-   "question":"",
-   "options":["","","",""],
-   "correct_answer":"",
-   "marks":2
+      console.error(err)
+      alert("Assessment generation failed")
+
+    }
+
+    setLoading(false)
+
   }
- ],
- "case_studies":[
-  {
-   "scenario":"",
-   "question":"",
-   "ideal_answer":"",
-   "marks":5
-  }
- ]
+
+
+  return (
+
+    <div style={{ padding: "40px", fontFamily: "sans-serif" }}>
+
+      <h1>HireMinds AI Hiring Companion</h1>
+
+      {/* JD INPUT */}
+
+      <textarea
+        placeholder="Paste Job Description"
+        value={jd}
+        onChange={(e) => setJd(e.target.value)}
+        style={{
+          width: "100%",
+          height: "150px",
+          padding: "10px",
+          marginTop: "20px"
+        }}
+      />
+
+      <div style={{ marginTop: "20px" }}>
+
+        <button onClick={parseJD}>
+          Parse Job Description
+        </button>
+
+        <button
+          onClick={generateAssessment}
+          disabled={!parsedData}
+          style={{ marginLeft: "10px" }}
+        >
+          Generate Assessment
+        </button>
+
+      </div>
+
+      {loading && <p>Loading...</p>}
+
+      {/* PARSED JD */}
+
+      {parsedData && (
+
+        <div style={{ marginTop: "30px" }}>
+
+          <h2>Parsed JD</h2>
+
+          <p><b>Role:</b> {parsedData.role}</p>
+          <p><b>Seniority:</b> {parsedData.seniority}</p>
+          <p><b>Domain:</b> {parsedData.domain}</p>
+          <p><b>Experience:</b> {parsedData.experience}</p>
+          <p><b>Skills:</b> {parsedData.skills?.join(", ")}</p>
+
+        </div>
+
+      )}
+
+      {/* ASSESSMENT */}
+
+      {assessment && (
+
+        <div style={{ marginTop: "40px" }}>
+
+          <h2>{assessment.title}</h2>
+
+          <p>Duration: {assessment.duration_minutes} minutes</p>
+
+          <h3>MCQ Questions</h3>
+
+          {assessment.mcq?.map((q, i) => (
+
+            <div key={i} style={{ marginBottom: "20px" }}>
+
+              <p><b>{i + 1}. {q.question}</b></p>
+
+              {q.options.map((opt, idx) => (
+                <p key={idx}>{opt}</p>
+              ))}
+
+              <p style={{ color: "green" }}>
+                Answer: {q.correct_answer}
+              </p>
+
+            </div>
+
+          ))}
+
+          <h3>Case Studies</h3>
+
+          {assessment.case_studies?.map((c, i) => (
+
+            <div key={i} style={{ marginBottom: "20px" }}>
+
+              <p><b>Scenario:</b> {c.scenario}</p>
+              <p><b>Question:</b> {c.question}</p>
+
+              <p style={{ color: "green" }}>
+                Ideal Answer: {c.ideal_answer}
+              </p>
+
+            </div>
+
+          ))}
+
+        </div>
+
+      )}
+
+    </div>
+
+  )
+
 }
-
-Role: ${role}
-Domain: ${domain}
-Skills: ${skills}
-Seniority: ${seniority}
-`
-        }
-      ]
-    })
-
-    const raw = completion.choices?.[0]?.message?.content
-    const parsed = extractJSON(raw)
-
-    console.log("Generated assessment")
-
-    res.json(parsed)
-
-  } catch (err) {
-    console.error("Assessment generation error:", err)
-
-    res.status(500).json({
-      error: "Assessment generation failed"
-    })
-  }
-})
-
-/* ---------------- START SERVER ---------------- */
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
