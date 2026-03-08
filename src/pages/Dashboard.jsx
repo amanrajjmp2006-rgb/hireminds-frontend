@@ -149,27 +149,52 @@ export default function Dashboard() {
 
           <p>Duration: {assessment.duration_minutes} minutes</p>
 
+          {/* MCQ QUESTIONS */}
+
           <h3>MCQ Questions</h3>
 
-          {Array.isArray(assessment.mcq) &&
-            assessment.mcq.map((q, i) => (
+          {assessment?.sections?.mcq?.map((q, i) => (
 
-              <div key={i} style={{ marginBottom: 20 }}>
+            <div key={i} style={{ marginBottom: 20 }}>
 
-                <p><b>{i + 1}. {q.question}</b></p>
+              <p><b>{i + 1}. {q.question}</b></p>
 
-                {Array.isArray(q.options) &&
-                  q.options.map((opt, idx) => (
-                    <p key={idx}>{opt}</p>
-                  ))}
-
-                <p style={{ color: "green" }}>
-                  Answer: {q.correct_answer}
+              {q.options && Object.entries(q.options).map(([key,val]) => (
+                <p key={key}>
+                  {key}. {val}
                 </p>
+              ))}
 
-              </div>
+              <p style={{ color: "green" }}>
+                Answer: {q.correct_answer}
+              </p>
 
-            ))}
+            </div>
+
+          ))}
+
+          {/* CASE STUDIES */}
+
+          <h3>Case Studies</h3>
+
+          {assessment?.sections?.case_studies?.map((c,i)=>(
+            <div key={i} style={{ marginBottom:20 }}>
+              <p><b>Scenario:</b> {c.scenario}</p>
+              <p><b>Question:</b> {c.question}</p>
+              <p style={{color:"green"}}>Ideal Answer: {c.ideal_answer}</p>
+            </div>
+          ))}
+
+          {/* BEHAVIORAL */}
+
+          <h3>Behavioral Question</h3>
+
+          {assessment?.sections?.behavioral?.map((b,i)=>(
+            <div key={i}>
+              <p><b>{b.question}</b></p>
+              <p style={{color:"green"}}>Ideal Answer: {b.ideal_answer}</p>
+            </div>
+          ))}
 
         </div>
 
