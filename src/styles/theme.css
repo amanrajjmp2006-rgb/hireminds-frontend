@@ -1,0 +1,30 @@
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.2), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(91, 192, 190, 0.2), transparent 45%),
+    linear-gradient(120deg, #0b132b, #1c2541, #0b132b);
+  background-size: 220% 220%;
+  animation: gradientShift 14s ease infinite;
+}
+
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(96, 165, 250, 0.15) 1px, transparent 1px);
+  background-size: 45px 45px;
+  animation: floatParticles 16s linear infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes floatParticles {
+  from { transform: translateY(0px); }
+  to { transform: translateY(-45px); }
+}
