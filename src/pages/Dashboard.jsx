@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [assessment, setAssessment] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const parseJD = async () => {
+  async function parseJD() {
 
     if (!jd) {
       alert("Paste a Job Description first")
@@ -45,11 +45,10 @@ export default function Dashboard() {
     }
 
     setLoading(false)
-
   }
 
 
-  const generateAssessment = async () => {
+  async function generateAssessment() {
 
     if (!parsedData) {
       alert("Parse JD first")
@@ -96,7 +95,11 @@ export default function Dashboard() {
         placeholder="Paste Job Description"
         value={jd}
         onChange={(e) => setJd(e.target.value)}
-        style={{ width: "100%", height: 150, marginTop: 20 }}
+        style={{
+          width: "100%",
+          height: 150,
+          marginTop: 20
+        }}
       />
 
       <div style={{ marginTop: 20 }}>
@@ -116,17 +119,25 @@ export default function Dashboard() {
 
       {loading && <p>Loading...</p>}
 
+      {/* Parsed JD */}
+
       {parsedData && (
 
         <div style={{ marginTop: 30 }}>
 
           <h2>Parsed Results</h2>
 
-          <p><b>Role:</b> {parsedData.role || "Not specified"}</p>
+          <p>
+            <b>Role:</b> {parsedData.role || "Not specified"}
+          </p>
 
-          <p><b>Seniority:</b> {parsedData.seniority || "Not specified"}</p>
+          <p>
+            <b>Seniority:</b> {parsedData.seniority || "Not specified"}
+          </p>
 
-          <p><b>Domain:</b> {parsedData.domain || "Not specified"}</p>
+          <p>
+            <b>Domain:</b> {parsedData.domain || "Not specified"}
+          </p>
 
           <p>
             <b>Skills:</b>{" "}
@@ -139,28 +150,34 @@ export default function Dashboard() {
 
       )}
 
+
+      {/* Assessment */}
+
       {assessment && (
 
         <div style={{ marginTop: 40 }}>
 
           <h2>{assessment.title}</h2>
 
-          <p><b>Total Duration:</b> {assessment.duration_minutes} minutes</p>
+          <p>
+            <b>Total Duration:</b> {assessment.duration_minutes} minutes
+          </p>
 
-          {/* MCQ QUESTIONS */}
+          {/* MCQ */}
 
           <h3>MCQ Questions</h3>
 
-          {assessment.sections?.mcq?.map((q, i) => (
+          {assessment.mcq?.map((q, i) => (
 
             <div key={i} style={{ marginBottom: 20 }}>
 
-              <p><b>{i + 1}. {q.question}</b></p>
+              <p>
+                <b>{i + 1}. {q.question}</b>
+              </p>
 
-              <p>A. {q.options.A}</p>
-              <p>B. {q.options.B}</p>
-              <p>C. {q.options.C}</p>
-              <p>D. {q.options.D}</p>
+              {q.options?.map((opt, idx) => (
+                <p key={idx}>{opt}</p>
+              ))}
 
               <p style={{ color: "green" }}>
                 Correct Answer: {q.correct_answer}
@@ -175,20 +192,21 @@ export default function Dashboard() {
           ))}
 
 
-          {/* CASE STUDIES */}
+          {/* Case Studies */}
 
           <h3>Case Studies</h3>
 
-          {assessment.sections?.case_studies?.map((c, i) => (
+          {assessment.case_studies?.map((c, i) => (
 
             <div key={i} style={{ marginBottom: 25 }}>
 
-              <p><b>Scenario:</b> {c.scenario}</p>
+              <p>
+                <b>{i + 1}. {c.question}</b>
+              </p>
 
-              <p><b>Question:</b> {c.question}</p>
-
-              <p style={{ color: "blue" }}>
-                Ideal Answer: {c.ideal_answer}
+              <p>
+                <b>Expected Points:</b>{" "}
+                {c.expected_points?.join(", ")}
               </p>
 
               <p>Weight: {c.weight}</p>
@@ -200,18 +218,16 @@ export default function Dashboard() {
           ))}
 
 
-          {/* BEHAVIORAL */}
+          {/* Behavioral */}
 
           <h3>Behavioral Question</h3>
 
-          {assessment.sections?.behavioral?.map((b, i) => (
+          {assessment.behavioral?.map((b, i) => (
 
             <div key={i} style={{ marginBottom: 20 }}>
 
-              <p><b>{b.question}</b></p>
-
-              <p style={{ color: "purple" }}>
-                Ideal Answer: {b.ideal_answer}
+              <p>
+                <b>{b.question}</b>
               </p>
 
               <p>Weight: {b.weight}</p>
