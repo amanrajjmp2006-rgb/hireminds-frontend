@@ -30,10 +30,8 @@ export default function Dashboard() {
 
       const data = await res.json()
 
-      console.log("Parse JD result:", data)
-
       if (!res.ok || !data.ok) {
-        alert(data?.error?.message || "Parsing failed")
+        alert("Parsing failed")
         return
       }
 
@@ -147,53 +145,81 @@ export default function Dashboard() {
 
           <h2>{assessment.title}</h2>
 
-          <p>Duration: {assessment.duration_minutes} minutes</p>
+          <p><b>Total Duration:</b> {assessment.duration_minutes} minutes</p>
 
           {/* MCQ QUESTIONS */}
 
           <h3>MCQ Questions</h3>
 
-          {assessment?.sections?.mcq?.map((q, i) => (
+          {assessment.sections?.mcq?.map((q, i) => (
 
             <div key={i} style={{ marginBottom: 20 }}>
 
               <p><b>{i + 1}. {q.question}</b></p>
 
-              {q.options && Object.entries(q.options).map(([key,val]) => (
-                <p key={key}>
-                  {key}. {val}
-                </p>
-              ))}
+              <p>A. {q.options.A}</p>
+              <p>B. {q.options.B}</p>
+              <p>C. {q.options.C}</p>
+              <p>D. {q.options.D}</p>
 
               <p style={{ color: "green" }}>
-                Answer: {q.correct_answer}
+                Correct Answer: {q.correct_answer}
               </p>
+
+              <p>Weight: {q.weight}</p>
+
+              <p>Time: {q.time_minutes} minutes</p>
 
             </div>
 
           ))}
+
 
           {/* CASE STUDIES */}
 
           <h3>Case Studies</h3>
 
-          {assessment?.sections?.case_studies?.map((c,i)=>(
-            <div key={i} style={{ marginBottom:20 }}>
+          {assessment.sections?.case_studies?.map((c, i) => (
+
+            <div key={i} style={{ marginBottom: 25 }}>
+
               <p><b>Scenario:</b> {c.scenario}</p>
+
               <p><b>Question:</b> {c.question}</p>
-              <p style={{color:"green"}}>Ideal Answer: {c.ideal_answer}</p>
+
+              <p style={{ color: "blue" }}>
+                Ideal Answer: {c.ideal_answer}
+              </p>
+
+              <p>Weight: {c.weight}</p>
+
+              <p>Time: {c.time_minutes} minutes</p>
+
             </div>
+
           ))}
+
 
           {/* BEHAVIORAL */}
 
           <h3>Behavioral Question</h3>
 
-          {assessment?.sections?.behavioral?.map((b,i)=>(
-            <div key={i}>
+          {assessment.sections?.behavioral?.map((b, i) => (
+
+            <div key={i} style={{ marginBottom: 20 }}>
+
               <p><b>{b.question}</b></p>
-              <p style={{color:"green"}}>Ideal Answer: {b.ideal_answer}</p>
+
+              <p style={{ color: "purple" }}>
+                Ideal Answer: {b.ideal_answer}
+              </p>
+
+              <p>Weight: {b.weight}</p>
+
+              <p>Time: {b.time_minutes} minutes</p>
+
             </div>
+
           ))}
 
         </div>
