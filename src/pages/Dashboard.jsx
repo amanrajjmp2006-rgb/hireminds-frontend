@@ -5,214 +5,238 @@ import ShareLinkCard from "../components/ShareLinkCard"
 import { createTest, generateAssessment, parseJD } from "../services/api"
 
 const normalizeAssessment = (data) => ({
-  title: data?.title || "Role Assessment",
-  duration_minutes: data?.duration_minutes ?? 60,
-  mcq: data?.mcq ?? [],
-  case_studies: data?.case_studies ?? [],
+title: data?.title || "Role Assessment",
+duration_minutes: data?.duration_minutes ?? 60,
+mcq: data?.mcq ?? [],
+case_studies: data?.case_studies ?? [],
 })
 
 export default function Dashboard() {
 
-  const [jobDescription,setJobDescription] = useState("")
-  const [parsed,setParsed] = useState(null)
-  const [assessment,setAssessment] = useState(null)
-  const [testId,setTestId] = useState("")
-  const [error,setError] = useState("")
-  const [loading,setLoading] = useState({
-    parse:false,
-    assess:false,
-    create:false
-  })
+const [jobDescription,setJobDescription] = useState("")
+const [parsed,setParsed] = useState(null)
+const [assessment,setAssessment] = useState(null)
+const [testId,setTestId] = useState("")
+const [error,setError] = useState("")
+const [loading,setLoading] = useState({
+parse:false,
+assess:false,
+create:false
+})
 
-  const canGenerate = Boolean(parsed)
-  const canCreate = Boolean(assessment)
+const canGenerate = Boolean(parsed)
+const canCreate = Boolean(assessment)
 
-  const parseInfo = useMemo(()=>{
-    if(!parsed) return []
+const parseInfo = useMemo(()=>{
 
-    return [
-      ["Role",parsed.role || "N/A"],
-      ["Seniority",parsed.seniority || "N/A"],
-      ["Domain",parsed.domain || "N/A"],
-      ["Skills",(parsed.skills || []).join(", ") || "N/A"]
-    ]
+```
+if(!parsed) return []
 
-  },[parsed])
+return [
+  ["Role",parsed.role || "N/A"],
+  ["Seniority",parsed.seniority || "N/A"],
+  ["Domain",parsed.domain || "N/A"],
+  ["Skills",(parsed.skills || []).join(", ") || "N/A"]
+]
+```
 
-  const onParse = async () => {
+},[parsed])
 
-    if(!jobDescription.trim()){
-      setError("Please enter a job description")
-      return
-    }
+const onParse = async () => {
 
-    setError("")
-    setLoading(s=>({...s,parse:true}))
+```
+if(!jobDescription.trim()){
+  setError("Please enter a job description.")
+  return
+}
 
-    try{
+setError("")
+setLoading(s=>({...s,parse:true}))
 
-      const result = await parseJD(jobDescription)
+try{
 
-      setParsed(result)
+  const result = await parseJD(jobDescription)
 
-    }catch{
+  setParsed(result)
 
-      setError("Could not parse job description")
+}catch{
 
-    }finally{
+  setError("Could not parse job description.")
 
-      setLoading(s=>({...s,parse:false}))
+}finally{
 
-    }
+  setLoading(s=>({...s,parse:false}))
 
+}
+```
+
+}
+
+const onGenerate = async () => {
+
+```
+if(!parsed) return
+
+setError("")
+setLoading(s=>({...s,assess:true}))
+
+try{
+
+  const safeParsed = {
+    role: parsed.role || "General Role",
+    seniority: parsed.seniority || "Entry Level",
+    skills: parsed.skills && parsed.skills.length ? parsed.skills : ["general"],
+    domain: parsed.domain || "General Industry",
+    responsibilities: parsed.responsibilities || []
   }
 
-  const onGenerate = async () => {
+  const generated = await generateAssessment(safeParsed)
 
-    if(!parsed) return
+  setAssessment(normalizeAssessment(generated))
+  setTestId("")
 
-    setError("")
-    setLoading(s=>({...s,assess:true}))
+}catch{
 
-    try{
+  setError("Assessment generation failed")
 
-      const result = await generateAssessment(parsed)
+}finally{
 
-      setAssessment(normalizeAssessment(result))
+  setLoading(s=>({...s,assess:false}))
 
-    }catch{
+}
+```
 
-      setError("Assessment generation failed")
+}
 
-    }finally{
+const onCreateTest = async () => {
 
-      setLoading(s=>({...s,assess:false}))
+```
+if(!assessment) return
 
-    }
+setError("")
+setLoading(s=>({...s,create:true}))
 
+try{
+
+  const payload = {
+    assessment: assessment
   }
 
-  const onCreateTest = async () => {
+  const response = await createTest(payload)
 
-    if(!assessment) return
+  setTestId(response?.test_id || "")
 
-    setError("")
-    setLoading(s=>({...s,create:true}))
+}catch{
 
-    try{
+  setError("Could not create test link.")
 
-      const response = await createTest({assessment})
+}finally{
 
-      setTestId(response.test_id)
+  setLoading(s=>({...s,create:false}))
 
-    }catch{
+}
+```
 
-      setError("Could not create test link")
+}
 
-    }finally{
+return (
 
-      setLoading(s=>({...s,create:false}))
+```
+<div className="app-shell">
 
-    }
+  <Navbar/>
 
-  }
+  <main className="container" style={{paddingBottom:28}}>
 
-  return (
+    <section className="glass round-3xl hero">
 
-    <div className="app-shell">
+      <h1 className="title">AI Hiring Companion</h1>
 
-      <Navbar/>
+      <p className="subtitle">
+        Generate role-specific hiring assessments instantly
+      </p>
 
-      <main className="container" style={{paddingBottom:28}}>
+      <textarea
+      className="textarea"
+      placeholder="Paste job description"
+      value={jobDescription}
+      onChange={(e)=>setJobDescription(e.target.value)}
+      />
 
-        <section className="glass round-3xl hero">
+      <div className="row">
 
-          <h1 className="title">AI Hiring Companion</h1>
+        <button
+        className="btn gradient-btn glow-hover"
+        onClick={onParse}
+        disabled={loading.parse}
+        >
+        {loading.parse ? "Parsing..." : "Parse JD"}
+        </button>
+
+        <button
+        className="btn btn-secondary"
+        onClick={onGenerate}
+        disabled={!canGenerate || loading.assess}
+        >
+        {loading.assess ? "Generating..." : "Generate Assessment"}
+        </button>
+
+        <button
+        className="btn btn-ghost"
+        onClick={onCreateTest}
+        disabled={!canCreate || loading.create}
+        >
+        {loading.create ? "Creating..." : "Create Test Link"}
+        </button>
+
+      </div>
+
+      {error && <p className="error">{error}</p>}
+
+      {testId && <ShareLinkCard testId={testId}/>}
+
+    </section>
+
+    <section className="grid-4">
+
+      {parseInfo.map(([label,value]) => (
+
+        <div key={label} className="glass kpi">
+
+          <p className="k">{label}</p>
+          <p className="v">{value}</p>
+
+        </div>
+
+      ))}
+
+    </section>
+
+    {assessment && (
+
+      <section>
+
+        <div className="section-head">
+
+          <h2>{assessment.title}</h2>
 
           <p className="subtitle">
-            Generate role-specific hiring assessments instantly
+            Duration: {assessment.duration_minutes} minutes
           </p>
 
-          <textarea
-          className="textarea"
-          placeholder="Paste job description"
-          value={jobDescription}
-          onChange={(e)=>setJobDescription(e.target.value)}
-          />
+        </div>
 
-          <div className="row">
+        <AssessmentPreview assessment={assessment}/>
 
-            <button
-            className="btn gradient-btn glow-hover"
-            onClick={onParse}
-            disabled={loading.parse}
-            >
-            {loading.parse ? "Parsing..." : "Parse JD"}
-            </button>
+      </section>
 
-            <button
-            className="btn btn-secondary"
-            onClick={onGenerate}
-            disabled={!canGenerate || loading.assess}
-            >
-            {loading.assess ? "Generating..." : "Generate Assessment"}
-            </button>
+    )}
 
-            <button
-            className="btn btn-ghost"
-            onClick={onCreateTest}
-            disabled={!canCreate || loading.create}
-            >
-            {loading.create ? "Creating..." : "Create Test Link"}
-            </button>
+  </main>
 
-          </div>
+</div>
+```
 
-          {error && <p className="error">{error}</p>}
-
-          {testId && <ShareLinkCard testId={testId}/>}
-
-        </section>
-
-        <section className="grid-4">
-
-          {parseInfo.map(([label,value]) => (
-
-            <div key={label} className="glass kpi">
-
-              <p className="k">{label}</p>
-              <p className="v">{value}</p>
-
-            </div>
-
-          ))}
-
-        </section>
-
-        {assessment && (
-
-          <section>
-
-            <div className="section-head">
-
-              <h2>{assessment.title}</h2>
-
-              <p className="subtitle">
-                Duration: {assessment.duration_minutes} minutes
-              </p>
-
-            </div>
-
-            <AssessmentPreview assessment={assessment}/>
-
-          </section>
-
-        )}
-
-      </main>
-
-    </div>
-
-  )
+)
 
 }
