@@ -7,18 +7,20 @@ import { createTest, generateAssessment, parseJD } from "../services/api"
 const normalizeAssessment = (data) => ({
 title: data?.title || "Role Assessment",
 duration_minutes: data?.duration_minutes ?? 60,
-mcq: data?.mcq ?? [],
+mcq: data?.mcq ?? data?.mcq_questions ?? [],
 case_studies: data?.case_studies ?? [],
+behavioral: data?.behavioral ?? data?.behavioral_questions ?? [],
+assessment_id: data?.assessment_id,
 })
 
 export default function Dashboard() {
 
-const [jobDescription,setJobDescription] = useState("")
-const [parsed,setParsed] = useState(null)
-const [assessment,setAssessment] = useState(null)
-const [testId,setTestId] = useState("")
-const [error,setError] = useState("")
-const [loading,setLoading] = useState({
+const [jobDescription, setJobDescription] = useState("")
+const [parsed, setParsed] = useState(null)
+const [assessment, setAssessment] = useState(null)
+const [testId, setTestId] = useState("")
+const [error, setError] = useState("")
+const [loading, setLoading] = useState({
 parse:false,
 assess:false,
 create:false
@@ -27,16 +29,16 @@ create:false
 const canGenerate = Boolean(parsed)
 const canCreate = Boolean(assessment)
 
-const parseInfo = useMemo(()=>{
+const parseInfo = useMemo(() => {
 
 ```
 if(!parsed) return []
 
 return [
-  ["Role",parsed.role || "N/A"],
-  ["Seniority",parsed.seniority || "N/A"],
-  ["Domain",parsed.domain || "N/A"],
-  ["Skills",(parsed.skills || []).join(", ") || "N/A"]
+  ["Role", parsed.role || "N/A"],
+  ["Seniority", parsed.seniority || "N/A"],
+  ["Domain", parsed.domain || "N/A"],
+  ["Skills", (parsed.skills || []).join(", ") || "N/A"]
 ]
 ```
 
@@ -51,7 +53,7 @@ if(!jobDescription.trim()){
 }
 
 setError("")
-setLoading(s=>({...s,parse:true}))
+setLoading(s => ({...s, parse:true}))
 
 try{
 
@@ -65,7 +67,7 @@ try{
 
 }finally{
 
-  setLoading(s=>({...s,parse:false}))
+  setLoading(s => ({...s, parse:false}))
 
 }
 ```
@@ -78,7 +80,7 @@ const onGenerate = async () => {
 if(!parsed) return
 
 setError("")
-setLoading(s=>({...s,assess:true}))
+setLoading(s => ({...s, assess:true}))
 
 try{
 
@@ -101,7 +103,7 @@ try{
 
 }finally{
 
-  setLoading(s=>({...s,assess:false}))
+  setLoading(s => ({...s, assess:false}))
 
 }
 ```
@@ -114,15 +116,11 @@ const onCreateTest = async () => {
 if(!assessment) return
 
 setError("")
-setLoading(s=>({...s,create:true}))
+setLoading(s => ({...s, create:true}))
 
 try{
 
-  const payload = {
-    assessment: assessment
-  }
-
-  const response = await createTest(payload)
+  const response = await createTest({assessment})
 
   setTestId(response?.test_id || "")
 
@@ -132,7 +130,7 @@ try{
 
 }finally{
 
-  setLoading(s=>({...s,create:false}))
+  setLoading(s => ({...s, create:false}))
 
 }
 ```
@@ -153,40 +151,40 @@ return (
       <h1 className="title">AI Hiring Companion</h1>
 
       <p className="subtitle">
-        Generate role-specific hiring assessments instantly
+        Generate role-specific hiring assessments instantly.
       </p>
 
       <textarea
-      className="textarea"
-      placeholder="Paste job description"
-      value={jobDescription}
-      onChange={(e)=>setJobDescription(e.target.value)}
+        className="textarea"
+        placeholder="Paste job description"
+        value={jobDescription}
+        onChange={(e)=>setJobDescription(e.target.value)}
       />
 
       <div className="row">
 
         <button
-        className="btn gradient-btn glow-hover"
-        onClick={onParse}
-        disabled={loading.parse}
+          className="btn gradient-btn glow-hover"
+          onClick={onParse}
+          disabled={loading.parse}
         >
-        {loading.parse ? "Parsing..." : "Parse JD"}
+          {loading.parse ? "Parsing..." : "Parse JD"}
         </button>
 
         <button
-        className="btn btn-secondary"
-        onClick={onGenerate}
-        disabled={!canGenerate || loading.assess}
+          className="btn btn-secondary"
+          onClick={onGenerate}
+          disabled={!canGenerate || loading.assess}
         >
-        {loading.assess ? "Generating..." : "Generate Assessment"}
+          {loading.assess ? "Generating..." : "Generate Assessment"}
         </button>
 
         <button
-        className="btn btn-ghost"
-        onClick={onCreateTest}
-        disabled={!canCreate || loading.create}
+          className="btn btn-ghost"
+          onClick={onCreateTest}
+          disabled={!canCreate || loading.create}
         >
-        {loading.create ? "Creating..." : "Create Test Link"}
+          {loading.create ? "Creating..." : "Create Test Link"}
         </button>
 
       </div>
