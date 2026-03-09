@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { downloadVCard, getLeaderboard } from '../services/api'
+import { getLeaderboard } from '../services/api'
+
+const rankRecommendation = (score = 0) => {
+  if (score >= 80) return 'Advance'
+  if (score >= 60) return 'Review'
+  return 'Reject'
+}
 
 export default function Leaderboard() {
   const { test_id } = useParams()
@@ -29,32 +35,31 @@ export default function Leaderboard() {
   return (
     <div className="app-shell">
       <Navbar />
-      <main className="container" style={{ paddingBottom: 28 }}>
-        <h1 style={{ marginBottom: 14 }}>Leaderboard</h1>
+      <main className="container animate-enter" style={{ paddingBottom: 32 }}>
+        <h1 className="title" style={{ marginBottom: 16 }}>Candidate Leaderboard</h1>
         {error && <p className="error">{error}</p>}
         {loading && <div className="skeleton" style={{ height: 170 }} />}
 
         {!loading && (
-          <div className="glass round-2xl table-wrap">
-            <table className="table">
+          <div className="glass panel table-wrap">
+            <table className="table premium-table">
               <thead>
-                <tr><th>Rank</th><th>Candidate</th><th>Score</th><th>Profile</th></tr>
+                <tr><th>Rank</th><th>Candidate</th><th>Score</th><th>Recommendation</th><th>Insight</th></tr>
               </thead>
               <tbody>
                 {rows.map((row, idx) => (
-                  <tr key={`${row.candidate_id || row.name}-${idx}`} className="row-anim" style={{ background: idx < 3 ? 'rgba(37,99,235,.12)' : 'transparent' }}>
-                    <td style={{ color: '#67e8f9', fontWeight: 600 }}>#{idx + 1}</td>
+                  <tr key={`${row.candidate_id || row.name}-${idx}`} className="row-anim">
+                    <td><span className="rank">#{idx + 1}</span></td>
                     <td>{row.name || row.candidate_name || 'Unknown'}</td>
-                    <td style={{ color: '#93c5fd', fontWeight: 600 }}>{row.score ?? 0}</td>
-                    <td>{row.candidate_id ? <button onClick={() => downloadVCard(row.candidate_id)} className="btn btn-secondary">Download Candidate Profile</button> : <span style={{ color: '#64748b' }}>N/A</span>}</td>
+                    <td className="score-pill">{row.score ?? 0}</td>
+                    <td>{row.recommendation || rankRecommendation(row.score)}</td>
+                    <td><button className="btn btn-secondary" onClick={() => navigate(`/candidate/${test_id}/${row.candidate_id || idx}`, { state: { row } })}>View</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-
-        <button onClick={() => navigate('/')} className="btn gradient-btn glow-hover mt-6">Back to Dashboard</button>
       </main>
     </div>
   )

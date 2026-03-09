@@ -1,30 +1,29 @@
 import QuestionCard from './QuestionCard'
 
-export default function AssessmentPreview({ assessment }) {
+export default function AssessmentPreview({ assessment, compact = false }) {
   const mcq = assessment?.mcq ?? []
   const caseStudies = assessment?.case_studies ?? []
-  const behavioral = assessment?.behavioral ?? []
 
   return (
-    <section>
-      <h3 style={{ marginTop: 16 }}>MCQ</h3>
+    <section className="preview-wrap">
+      <div className="section-head">
+        <h3 style={{ margin: 0 }}>{assessment?.title || 'Assessment Preview'}</h3>
+        <span className="meta">Duration: {assessment?.duration_minutes ?? 60} min</span>
+      </div>
+
+      <h4 className="section-label">MCQ ({mcq.length})</h4>
       <div className="question-grid">
-        {mcq.map((q, i) => (
+        {(compact ? mcq.slice(0, 4) : mcq).map((q, i) => (
           <QuestionCard key={`mcq-${i}`} question={q} index={i} type="MCQ" answer={q?.correct_answer} onChange={() => {}} readOnly showAnswer />
         ))}
       </div>
 
-      <h3 style={{ marginTop: 18 }}>Case Studies</h3>
+      <h4 className="section-label">Case Studies ({caseStudies.length})</h4>
       <div className="question-grid">
-        {caseStudies.map((q, i) => (
+        {(compact ? caseStudies.slice(0, 2) : caseStudies).map((q, i) => (
           <QuestionCard key={`case-${i}`} question={q} index={i} type="Case Study" answer="" onChange={() => {}} readOnly />
         ))}
       </div>
-
-      <h3 style={{ marginTop: 18 }}>Behavioral</h3>
-      {behavioral.map((q, i) => (
-        <QuestionCard key={`beh-${i}`} question={q} index={i} type="Behavioral" answer="" onChange={() => {}} readOnly />
-      ))}
     </section>
   )
 }
