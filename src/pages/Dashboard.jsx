@@ -1,249 +1,81 @@
 import { useState } from "react"
+import AssessmentPreview from "../components/AssessmentPreview"
+import ShareLinkCard from "../components/ShareLinkCard"
+import { createTest, generateAssessment, parseJD } from "../services/api"
 
 export default function Dashboard() {
-
-  const API = "https://ai-hiring-companion-backend-production.up.railway.app"
-
-  const [jd, setJd] = useState("")
-  const [parsedData, setParsedData] = useState(null)
+  const [jobDescription, setJobDescription] = useState("")
+  const [parsed, setParsed] = useState(null)
   const [assessment, setAssessment] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [testId, setTestId] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState({ parse: false, generate: false, create: false })
 
-  async function parseJD() {
-
-    if (!jd) {
-      alert("Paste a Job Description first")
-      return
-    }
-
+  const onParse = async () => {
+    setError("")
+    setLoading((s) => ({ ...s, parse: true }))
     try {
-
-      setLoading(true)
-
-      const res = await fetch(`${API}/parse-jd`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ jd })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || !data.ok) {
-        alert("Parsing failed")
-        return
-      }
-
-      setParsedData(data.data)
-
-    } catch (err) {
-
-      console.error(err)
-      alert("Server error")
-
+      const res = await parseJD(jobDescription)
+      setParsed({ ...res, skills: res.skills || res.required_skills || [] })
+    } catch {
+      setError("Unable to parse job description.")
+    } finally {
+      setLoading((s) => ({ ...s, parse: false }))
     }
-
-    setLoading(false)
   }
 
-
-  async function generateAssessment() {
-
-    if (!parsedData) {
-      alert("Parse JD first")
-      return
-    }
-
+  const onGenerate = async () => {
+    if (!parsed?.job_id) return
+    setLoading((s) => ({ ...s, generate: true }))
+    setError("")
     try {
-
-      setLoading(true)
-
-      const res = await fetch(`${API}/generate-assessment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(parsedData)
-      })
-
-      const data = await res.json()
-
-      console.log("Assessment result:", data)
-
-      setAssessment(data)
-
-    } catch (err) {
-
-      console.error(err)
-      alert("Assessment generation failed")
-
+      setAssessment(await generateAssessment(parsed.job_id))
+    } catch {
+      setError("Assessment generation failed.")
+    } finally {
+      setLoading((s) => ({ ...s, generate: false }))
     }
-
-    setLoading(false)
-
   }
 
+  const onCreate = async () => {
+    setLoading((s) => ({ ...s, create: true }))
+    try {
+      const res = await createTest(assessment)
+      setTestId(res.test_id || res.id)
+    } catch {
+      setError("Could not create test link.")
+    } finally {
+      setLoading((s) => ({ ...s, create: false }))
+    }
+  }
 
   return (
+    <main className="container">
+      <section className="hero">
+        <h1>AI Hiring Companion</h1>
+        <p className="muted">Generate role-specific hiring assessments instantly.</p>
+      </section>
 
-    <div style={{ padding: 40, fontFamily: "sans-serif" }}>
-
-      <h1>HireMinds – AI Hiring Companion</h1>
-
-      <textarea
-        placeholder="Paste Job Description"
-        value={jd}
-        onChange={(e) => setJd(e.target.value)}
-        style={{
-          width: "100%",
-          height: 150,
-          marginTop: 20
-        }}
-      />
-
-      <div style={{ marginTop: 20 }}>
-
-        <button onClick={parseJD}>
-          Parse Job Description
-        </button>
-
-        <button
-          onClick={generateAssessment}
-          style={{ marginLeft: 10 }}
-        >
-          Generate Assessment
-        </button>
-
-      </div>
-
-      {loading && <p>Loading...</p>}
-
-      {/* Parsed JD */}
-
-      {parsedData && (
-
-        <div style={{ marginTop: 30 }}>
-
-          <h2>Parsed Results</h2>
-
-          <p>
-            <b>Role:</b> {parsedData.role || "Not specified"}
-          </p>
-
-          <p>
-            <b>Seniority:</b> {parsedData.seniority || "Not specified"}
-          </p>
-
-          <p>
-            <b>Domain:</b> {parsedData.domain || "Not specified"}
-          </p>
-
-          <p>
-            <b>Skills:</b>{" "}
-            {Array.isArray(parsedData.skills)
-              ? parsedData.skills.join(", ")
-              : "Not specified"}
-          </p>
-
+      <section className="glass card" style={{ marginTop: 14 }}>
+        <textarea className="textarea" value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} placeholder="Paste Job Description" />
+        <div className="row" style={{ marginTop: 12 }}>
+          <button className="btn btn-glow" disabled={loading.parse || !jobDescription.trim()} onClick={onParse}>{loading.parse ? "Parsing..." : "Parse Job Description"}</button>
+          <button className="btn btn-outline" disabled={loading.generate || !parsed?.job_id} onClick={onGenerate}>{loading.generate ? "Generating..." : "Generate Assessment"}</button>
+          <button className="btn btn-outline" disabled={loading.create || !assessment} onClick={onCreate}>{loading.create ? "Creating..." : "Create Test Link"}</button>
         </div>
+        {error && <p className="err">{error}</p>}
+      </section>
 
+      {parsed && (
+        <section className="grid grid-4" style={{ marginTop: 14 }}>
+          {[["Role", parsed.role], ["Seniority", parsed.seniority || parsed.experience_years], ["Domain", parsed.domain], ["Skills", (parsed.skills || []).join(", ")]].map(([label, value]) => (
+            <div key={label} className="glass card"><div className="muted" style={{ fontSize: 12 }}>{label}</div><div>{value || "—"}</div></div>
+          ))}
+        </section>
       )}
 
-
-      {/* Assessment */}
-
-      {assessment && (
-
-        <div style={{ marginTop: 40 }}>
-
-          <h2>{assessment.title}</h2>
-
-          <p>
-            <b>Total Duration:</b> {assessment.duration_minutes} minutes
-          </p>
-
-          {/* MCQ */}
-
-          <h3>MCQ Questions</h3>
-
-          {assessment.mcq?.map((q, i) => (
-
-            <div key={i} style={{ marginBottom: 20 }}>
-
-              <p>
-                <b>{i + 1}. {q.question}</b>
-              </p>
-
-              {q.options?.map((opt, idx) => (
-                <p key={idx}>{opt}</p>
-              ))}
-
-              <p style={{ color: "green" }}>
-                Correct Answer: {q.correct_answer}
-              </p>
-
-              <p>Weight: {q.weight}</p>
-
-              <p>Time: {q.time_minutes} minutes</p>
-
-            </div>
-
-          ))}
-
-
-          {/* Case Studies */}
-
-          <h3>Case Studies</h3>
-
-          {assessment.case_studies?.map((c, i) => (
-
-            <div key={i} style={{ marginBottom: 25 }}>
-
-              <p>
-                <b>{i + 1}. {c.question}</b>
-              </p>
-
-              <p>
-                <b>Expected Points:</b>{" "}
-                {c.expected_points?.join(", ")}
-              </p>
-
-              <p>Weight: {c.weight}</p>
-
-              <p>Time: {c.time_minutes} minutes</p>
-
-            </div>
-
-          ))}
-
-
-          {/* Behavioral */}
-
-          <h3>Behavioral Question</h3>
-
-          {assessment.behavioral?.map((b, i) => (
-
-            <div key={i} style={{ marginBottom: 20 }}>
-
-              <p>
-                <b>{b.question}</b>
-              </p>
-
-              <p>Weight: {b.weight}</p>
-
-              <p>Time: {b.time_minutes} minutes</p>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      )}
-
-    </div>
-
+      <div style={{ marginTop: 16 }}>{assessment && <AssessmentPreview assessment={assessment} />}</div>
+      <div style={{ marginTop: 16 }}><ShareLinkCard testId={testId} /></div>
+    </main>
   )
-
 }
