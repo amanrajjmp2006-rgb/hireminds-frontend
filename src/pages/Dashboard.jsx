@@ -16,21 +16,28 @@ const [jobDescription, setJobDescription] = useState("")
 const [parsed, setParsed] = useState(null)
 const [assessment, setAssessment] = useState(null)
 const [testId, setTestId] = useState("")
-const [loading, setLoading] = useState({ parse: false, assess: false, create: false })
 const [error, setError] = useState("")
+const [loading, setLoading] = useState({
+parse: false,
+assess: false,
+create: false,
+})
 
-// ✅ FIXED
 const canGenerate = Boolean(parsed)
 const canCreate = Boolean(assessment)
 
 const parseInfo = useMemo(() => {
 if (!parsed) return []
+
+```
 return [
-["Role", parsed.role || "N/A"],
-["Seniority", parsed.seniority || "N/A"],
-["Domain", parsed.domain || "N/A"],
-["Skills", (parsed.skills || []).join(", ") || "N/A"],
+  ["Role", parsed.role || "N/A"],
+  ["Seniority", parsed.seniority || "N/A"],
+  ["Domain", parsed.domain || "N/A"],
+  ["Skills", (parsed.skills || []).join(", ") || "N/A"],
 ]
+```
+
 }, [parsed])
 
 const onParse = async () => {
@@ -45,10 +52,7 @@ setLoading((s) => ({ ...s, parse: true }))
 
 try {
   const result = await parseJD(jobDescription.trim())
-
-  // backend returns { ok:true,data:{} }
-  setParsed(result.data || result)
-
+  setParsed(result)
 } catch (e) {
   setError("Could not parse job description.")
 } finally {
@@ -67,10 +71,8 @@ setLoading((s) => ({ ...s, assess: true }))
 
 try {
   const generated = await generateAssessment(parsed)
-
   setAssessment(normalizeAssessment(generated))
   setTestId("")
-
 } catch (e) {
   setError("Assessment generation failed.")
 } finally {
@@ -89,9 +91,7 @@ setLoading((s) => ({ ...s, create: true }))
 
 try {
   const response = await createTest({ assessment })
-
   setTestId(response.test_id)
-
 } catch (e) {
   setError("Could not create test link.")
 } finally {
@@ -112,38 +112,36 @@ return ( <div className="app-shell"> <Navbar />
       </p>
 
       <textarea
-        value={jobDescription}
-        onChange={(e) => setJobDescription(e.target.value)}
         className="textarea"
         placeholder="Paste job description"
+        value={jobDescription}
+        onChange={(e) => setJobDescription(e.target.value)}
       />
 
       <div className="row">
-
         <button
+          className="btn gradient-btn glow-hover"
           onClick={onParse}
           disabled={loading.parse}
-          className="btn gradient-btn glow-hover"
         >
           {loading.parse ? "Parsing..." : "Parse JD"}
         </button>
 
         <button
+          className="btn btn-secondary"
           onClick={onGenerate}
           disabled={!canGenerate || loading.assess}
-          className="btn btn-secondary"
         >
           {loading.assess ? "Generating..." : "Generate Assessment"}
         </button>
 
         <button
+          className="btn btn-ghost"
           onClick={onCreateTest}
           disabled={!canCreate || loading.create}
-          className="btn btn-ghost"
         >
           {loading.create ? "Creating..." : "Create Test Link"}
         </button>
-
       </div>
 
       {error && <p className="error">{error}</p>}
